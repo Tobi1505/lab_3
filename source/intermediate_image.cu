@@ -16,6 +16,12 @@ void IntermediateImage::apply_sobel_filter(){
     uint32_t n = width * height;
     if (n == 0) return;
 
+    // --- ZEITMESSUNG VORBEREITEN
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start); //Start Flagge
+
     //1. Sobel-Kernel definieren
     double h_kernel_x[9] = {-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0};
     double h_kernel_y[9] = {-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0};
@@ -63,5 +69,19 @@ void IntermediateImage::apply_sobel_filter(){
     cudaFree(d_res_x);
     cudaFree(d_res_y);
     cudaFree(d_final);
+
+    // ---ZEITMESSUNG ABSCHLIEßEN
+    cudaEventRecord(stop); // Stop-Flagge
+    cudaEventSynchronize(stop); //warten bis GPU fertig ist
+
+    float millisecond = 0;
+    cudaEventElapsedTime(&millisecond, start, stop);
+
+    //Zeit in Konsole ausgeben
+    printf("Bildgröße &d x &d | GPU Zeit: %f ms\n", widht, height, millisecond);
+
+    //Events löschen
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
 }
