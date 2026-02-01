@@ -20,7 +20,7 @@ __global__ void max_reduction_kernel(const double* __restrict__ input, double* _
     //Reduktion im Shared Memory
     for (uint32_t s = blockDim.x / 2; s > 0; s >>= 1) {
         if (tid < s) {
-            if (sdata[tid + s] < sdata[tid]) {
+            if (sdata[tid + s] > sdata[tid]) {
                 sdata[tid] = sdata[tid + s];
             }
         }
@@ -39,14 +39,14 @@ double get_max_value(void** d_source_image, std::uint32_t source_image_height, s
     const uint32_t threads_per_block = 256;
     uint32_t blocks_per_grid = (n + threads_per_block - 1) / threads_per_block;
 
-    double *d_input = static_cast<double*>(d_source_image);
+    double *d_input = static_cast<double*>(*d_source_image);
     double *d_block_maxima;
 
     //Speicher allokieren
     cudaMalloc(&d_block_maxima, blocks_per_grid * sizeof(double));
 
     //1. Durchgang: Maxima pro Block finden
-    max_reduction_kernel<<<blocks_per_grid, threads_per_block, threads_per_block * sizeof(double)>>>(d_block_maxima, d_final_max, blocks_per_grid);
+    max_reduction_kernel<<<blocks_per_grid, threads_per_block, threads_per_block * sizeof(double)>>>(d_input, d_block_maxima, n);
 
     //2. Durchgang: block_maxima auf ein Maximum reduzieren
     double *d_final_max;
