@@ -8,7 +8,7 @@
 //Hilfskernel
 __global__ void combine_sobel_kernel(const double* gx, const double* gy, double* output, uint32_t n) {
     uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (1 < n) {
+    if (i < n) {
         output[i] = sqrt(gx[i] * gx[i] + gy[i] * gy[i]);
     }
 }
@@ -38,6 +38,30 @@ void IntermediateImage::apply_sobel_filter(){
 
     //Faltung fpr x_richtung
     matrix_convolution(&d_source, width, height, &d_gx_k, 3, 3, &d_res_x);
+    //Faltung für y_Richtung
+    matrix_convolution(&d_source, width, height, &d_gy_k, 3, 3, &d_res_y);
 
+    //5. Ergebnisse kombinieren
+    void* d_final = nullptr;
+    cudaMalloc(&d_final, n * sizeof(double));
+
+    uint32_t threads = 256;
+    uint32_t blocks = (n + threads - 1) / threads;
+    combine_sobel_kernel<<<blocks, threads>>>(
+        static_cast<double*>(d_res_x),
+        static_cast<double*>(d_res_y),
+        static_cast<double*>(d_final),
+        n
+        );
+    //6. Ergebnis zurück in CPU-Vektor kopieren
+    cudaMemcpy(pixels.data(), d_final, n * sizeof(double), cudaMemcpyDeviceToHost);
+
+    //Cuda freigeben
+    cudaFree(d_gx_k);
+    cudaFree(d_gy_k);
+    cudaFree(d_source);
+    cudaFree(d_res_x);
+    cudaFree(d_res_y);
+    cudaFree(d_final);
 
 }
