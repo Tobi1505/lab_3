@@ -1,6 +1,12 @@
 #include <cstdint>
 #include <iostream>
 
+#include <vector>
+#include <string>
+#include "image/bitmap_image.h"
+#include "grayscale_image.h"
+#include "intermediate_image.h"
+
 int main(int argc, char** argv) {
 	// Liste deiner Bilder aus dem input-Ordner
 	std::vector<std::string> test_images = {
